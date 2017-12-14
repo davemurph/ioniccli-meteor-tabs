@@ -1,0 +1,76 @@
+Create ionic app
+----------------
+ionic start ioniccli-meteor-tabs tabs --cordova --no-link
+
+add to package.json:
+	"config": {
+		"ionic_webpack": "./webpack.config.js"
+	} to
+
+copy out the standard webpack.config.js to root:
+	cp node_modules/@ionic/app-scripts/config/webpack.config.js .
+
+	need to update for Typescript modules, alias for Meteor server, and ability to import Meteor/Cordova plugins
+	(compare original and modified for details)
+
+update tsconfig.json with api folder:
+	"include": [..., "api/**/*.ts"]
+	"exclude": [..., "api/nodemodules", "api"]
+
+update tsconfig with additional compiler options so we can load Meteor as external dependency -> specification for CommonJS instead of es2015:
+	"compilerOptions": {
+		"baseUrl": ".",
+		"module": "commonjs",
+		"paths": {
+			"api/*": ["./api/server/*"]
+		},
+		"skipLibCheck": true,
+		"stripInternal": true,
+		"noImplicitAny": false,...
+	}
+
+npm install --save-dev typescript-extends
+npm install --save-dev @types/meteor
+
+Create meteor app
+-----------------
+meteor create api
+rm -r -force api/node_modules
+rm -r -force api/client
+rm api/package.json
+rm api/package-lock.json
+
+add symlinks to package.json and node_modules, in powershell admin shell (from root dir):
+	New-Item -Path api\node_modules  -ItemType SymbolicLink -Value node_modules
+	New-Item -Path api\package.json  -ItemType SymbolicLink -Value package.json
+
+cd api
+meteor add barbatus:typescript
+
+add typescript config file: api/tsconfig.json
+
+ren server\main.js main.ts
+
+packages in default meteor project that we need to re-add:
+	npm install --save babel-runtime
+	npm install --save meteor-node-stubs
+
+install meteor-rxjs:
+	npm install --save meteor-rxjs
+
+if meteor-client-bundler is not installed:
+	npm install -g meteor-client-bundler
+
+add to scripts in package.json:
+	"meteor-client:bundle": "meteor-client bundle -s api"
+
+install tmp package (needed for meteor-client-bundler??)
+	npm install --save-dev tmp
+
+to create meteor-client.js under node_modules, run:
+	npm run meteor-client:bundle
+
+(will need to re-run if change to client)
+
+add to line 1 of src/app/main.ts (imported with all Meteor packages before any angular app stuff):
+	import 'meteor-client';
